@@ -28,9 +28,10 @@ define wget::fetch (
   $flags              = undef,
   $backup             = true,
   $mode               = undef,
+  $unless             = undef,
 ) {
 
-  include wget
+  include ::wget
 
   $http_proxy_env = $::http_proxy ? {
     undef   => [],
@@ -38,7 +39,8 @@ define wget::fetch (
   }
   $https_proxy_env = $::https_proxy ? {
     undef   => [],
-    default => [ "HTTPS_PROXY=${::https_proxy}", "https_proxy=${::https_proxy}" ],
+    default =>
+    [ "HTTPS_PROXY=${::https_proxy}", "https_proxy=${::https_proxy}" ],
   }
   $password_env = $user ? {
     undef   => [],
@@ -46,14 +48,19 @@ define wget::fetch (
   }
 
   # not using stdlib.concat to avoid extra dependency
-  $environment = split(inline_template('<%= (@http_proxy_env+@https_proxy_env+@password_env).join(\',\') %>'),',')
+  $environment =
+  split(inline_template('<%= (@http_proxy_env+@https_proxy_env+@password_env).join(\',\') %>'),',')
 
   $verbose_option = $verbose ? {
     true  => '--verbose',
     false => '--no-verbose'
   }
 
-  if $redownload == true or $cache_dir != undef  {
+  # Set unless test
+  if $unless {
+    $unless_test = $unless
+  }
+  elsif $redownload == true or $cache_dir != undef  {
     $unless_test = 'test'
   } else {
     $unless_test = "test -s '${destination}'"
@@ -76,11 +83,13 @@ define wget::fetch (
 
   if $user != undef {
     $wgetrc_content = $::operatingsystem ? {
-      # This is to work around an issue with macports wget and out of date CA cert bundle.  This requires
-      # installing the curl-ca-bundle package like so:
+      # This is to work around an issue with macports wget and out of date CA
+      # cert bundle.  This requires # installing the curl-ca-bundle package like
+      # so:
       #
       # sudo port install curl-ca-bundle
-      'Darwin' => "password=${password}\nCA_CERTIFICATE=/opt/local/share/curl/curl-ca-bundle.crt\n",
+      'Darwin' =>
+      "password=${password}\nCA_CERTIFICATE=/opt/local/share/curl/curl-ca-bundle.crt\n",
       default  => "password=${password}",
     }
 
