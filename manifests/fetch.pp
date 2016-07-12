@@ -203,25 +203,24 @@ define wget::fetch (
       backup   => $backup,
       schedule => $schedule,
     }
+  }
+  else {
+    file { $_destination:
+      ensure => file,
+      owner  => $execuser,
+      mode   => $mode,
     }
-    else {
-      file { $_destination:
-        ensure  => file,
-        owner   => $execuser,
-        mode    => $mode,
-        require => Exec["wget-${name}"],
-      }
-    }
+  }
 
-    # remove destination if source_hash is invalid
-    if $source_hash != undef {
-      exec { "wget-source_hash-check-${name}":
-        command  => "test ! -e '${_destination}' || rm ${_destination}",
-        path     => '/usr/bin:/usr/sbin:/bin:/usr/local/bin:/opt/local/bin',
-        # only remove destination if md5sum does not match $source_hash
-        unless   => "echo '${source_hash}  ${_destination}' | md5sum -c --quiet",
-        notify   => Exec["wget-${name}"],
-        schedule => $schedule,
-      }
+  # remove destination if source_hash is invalid
+  if $source_hash != undef {
+    exec { "wget-source_hash-check-${name}":
+      command  => "test ! -e '${_destination}' || rm ${_destination}",
+      path     => '/usr/bin:/usr/sbin:/bin:/usr/local/bin:/opt/local/bin',
+      # only remove destination if md5sum does not match $source_hash
+      unless   => "echo '${source_hash}  ${_destination}' | md5sum -c --quiet",
+      notify   => Exec["wget-${name}"],
+      schedule => $schedule,
     }
+  }
 }
