@@ -29,6 +29,9 @@ define wget::fetch (
   $backup             = true,
   $mode               = undef,
   $unless             = undef,
+  $destination_owner  = undef,
+  $destination_group  = undef,
+  $destination_mode   = undef,
 ) {
 
   include ::wget
@@ -174,9 +177,6 @@ define wget::fetch (
     }
   }
 
-
-
-
   exec { "wget-${name}":
     command     => $command,
     timeout     => $timeout,
@@ -193,15 +193,25 @@ define wget::fetch (
       undef   => inline_template('<%= require \'uri\'; File.basename(URI::parse(@source).path) %>'),
       default => $cache_file,
     }
-    file { $_destination:
-      ensure   => file,
-      source   => "${cache_dir}/${cache}",
-      owner    => $execuser,
-      mode     => $mode,
-      require  => Exec["wget-${name}"],
-      backup   => $backup,
-      schedule => $schedule,
-    }
+    #file { $_destination:
+    #  ensure   => file,
+    #  source   => "${cache_dir}/${cache}",
+    #  owner    => $execuser,
+    #  mode     => $mode,
+    #  require  => Exec["wget-${name}"],
+    #  backup   => $backup,
+    #  schedule => $schedule,
+    #}
+  }
+
+  file { $_destination:
+    ensure   => file,
+    source   => "${cache_dir}/${cache}",
+    owner    => $execuser,
+    mode     => $mode,
+    require  => Exec["wget-${name}"],
+    backup   => $backup,
+    schedule => $schedule,
   }
 
   # remove destination if source_hash is invalid
